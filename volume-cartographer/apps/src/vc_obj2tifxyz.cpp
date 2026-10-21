@@ -315,7 +315,11 @@ public:
         
         // Scale is currently in OBJ units. Convert to micrometers now.
         if (valid_count == 0) {
-            std::cerr << "Warning: no valid grid points were rasterized." << std::endl;
+            // An all-invalid grid is not a result: fail instead of saving an empty tifxyz (#1320).
+            std::cerr << "Error: no valid grid points were rasterized; nothing to save. "
+                         "If the OBJ's UVs are normalised to [0,1], pass the UV stretch_factor argument." << std::endl;
+            delete points;
+            return nullptr;
         }
         const bool src_scale_mode = (src_scale[0] > 0.f && src_scale[1] > 0.f);
         if (src_scale_mode) {
