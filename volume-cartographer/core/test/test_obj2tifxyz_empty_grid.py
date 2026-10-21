@@ -2,7 +2,7 @@
 
 Run with: python test_obj2tifxyz_empty_grid.py /path/to/vc_obj2tifxyz
 
-The input is a flat two-triangle OBJ whose UVs are normalised to [0, 1], the UV convention of the published
+The input is a flat two-triangle OBJ (a diamond) whose UVs are normalised to [0, 1], the UV convention of the published
 segment OBJs. Two cases:
 
   default arguments   with the default stretch factor the UV grid is 2 x 2 and no grid point lands inside a
@@ -24,15 +24,18 @@ if len(sys.argv) < 2:
     raise SystemExit("usage: test_obj2tifxyz_empty_grid.py /path/to/vc_obj2tifxyz")
 TOOL = str(Path(sys.argv.pop(1)).resolve())
 
+# A diamond in UV space: its UV bounding box is [0, 1] x [0, 1] but none of the box's four corners lies on the
+# mesh, which is what a published segment looks like (an irregular footprint inside its UV box). At the default
+# stretch factor the grid is 2 x 2 and samples exactly those four corners, so nothing is rasterized.
 OBJ = """\
-v 100 100 50
-v 300 100 50
-v 300 300 50
-v 100 300 50
-vt 0.05 0.05
-vt 0.95 0.05
-vt 0.95 0.95
-vt 0.05 0.95
+v 200 100 50
+v 300 200 50
+v 200 300 50
+v 100 200 50
+vt 0.5 0.0
+vt 1.0 0.5
+vt 0.5 1.0
+vt 0.0 0.5
 f 1/1 2/2 3/3
 f 1/1 3/3 4/4
 """
