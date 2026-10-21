@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 from pathlib import Path
 
 from .generate import generate_patch_caches
@@ -51,6 +52,16 @@ def main() -> None:
         help="Path to the training config YAML.",
     )
     parser.add_argument(
+        "-i",
+        "--input",
+        type=Path,
+        default=None,
+        help=(
+            "Dataset root with images/ and labels/. Overrides data_path in the "
+            "config, like vesuvius.train -i/--input."
+        ),
+    )
+    parser.add_argument(
         "--cache-dir",
         type=Path,
         default=None,
@@ -65,8 +76,12 @@ def main() -> None:
     args = parser.parse_args()
     _configure_blosc_threads()
 
+    if args.input is not None and not args.input.is_dir():
+        parser.error(f"Input directory does not exist: {args.input}")
+
     result = generate_patch_caches(
         config_path=args.config,
+        input_path=args.input,
         cache_dir=args.cache_dir,
         force=args.force,
     )
@@ -82,6 +97,15 @@ def main() -> None:
         f"{result.total_bg_patches} BG, "
         f"{result.total_unlabeled_fg_patches} unlabeled FG."
     )
+
+    if result.total_volumes == 0:
+        print(
+            "Error: no volumes found, so no cache was written. Pass the dataset "
+            "root (the folder with images/ and labels/) with -i/--input, or set "
+            "data_path in the config.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":
