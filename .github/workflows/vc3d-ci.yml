@@ -432,6 +432,20 @@ jobs:
         working-directory: volume-cartographer
         timeout-minutes: 2
         run: python3 core/test/test_obj2tifxyz_empty_grid.py build/ci-fast-cli/bin/vc_obj2tifxyz
+      - name: FORK-ONLY real-data proof for 1320 (published Scroll 1 segment OBJ)
+        working-directory: volume-cartographer
+        timeout-minutes: 5
+        run: |
+          curl -fsSL -o /tmp/seg.obj https://dl.ash2txt.org/full-scrolls/Scroll1/PHercParis4.volpkg/paths/20230504094316/20230504094316.obj
+          echo "== default arguments"
+          set +e
+          build/ci-fast-cli/bin/vc_obj2tifxyz /tmp/seg.obj /tmp/out_default
+          echo "exit code: $?"
+          ls -la /tmp/out_default 2>&1 || true
+          echo "== stretch factor 200"
+          build/ci-fast-cli/bin/vc_obj2tifxyz /tmp/seg.obj /tmp/out_200 200
+          echo "exit code: $?"
+          ls -la /tmp/out_200
 
   flatboi-compile:
     name: Linux Flatboi/PaStiX compile coverage (Clang QuickBuild)
