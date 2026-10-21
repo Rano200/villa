@@ -428,6 +428,10 @@ jobs:
         working-directory: volume-cartographer
         timeout-minutes: 2
         run: python3 core/test/test_render_band_prefetch.py build/ci-fast-cli/bin/vc_render_tifxyz
+      - name: Test obj2tifxyz exit code on an empty grid
+        working-directory: volume-cartographer
+        timeout-minutes: 2
+        run: python3 core/test/test_obj2tifxyz_empty_grid.py build/ci-fast-cli/bin/vc_obj2tifxyz
 
   flatboi-compile:
     name: Linux Flatboi/PaStiX compile coverage (Clang QuickBuild)
