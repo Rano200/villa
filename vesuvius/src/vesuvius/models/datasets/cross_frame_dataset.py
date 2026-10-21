@@ -18,6 +18,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -300,10 +301,11 @@ class CrossFrameZarrDataset(Dataset):
 
     def _scan_url(self, level: int) -> str:
         """URL of the OME-Zarr level used for the FG scan."""
-        base_url = self.labels_zarr_url.rstrip("/")
+        # Local Windows paths use ``\`` between components, so split on either.
+        base_url = self.labels_zarr_url.rstrip("/\\")
         # Strip trailing ``/<digit>`` so ``<base>/0`` -> ``<base>``.
-        last = base_url.rsplit("/", 1)[-1]
-        parent = base_url.rsplit("/", 1)[0] if last.isdigit() else base_url
+        last = re.split(r"[/\\]", base_url)[-1]
+        parent = re.sub(r"[/\\][^/\\]*$", "", base_url) if last.isdigit() else base_url
         return f"{parent}/{level}"
 
     def _compute_scan_factor(self, level: int) -> Tuple[int, int, int]:

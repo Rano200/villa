@@ -265,6 +265,22 @@ def test_explicit_storage_options_bypass_filter():
     assert opts == explicit
 
 
+@pytest.mark.parametrize(
+    "labels_url, expected",
+    [
+        ("s3://bucket/scroll/labels.ome.zarr/0", "s3://bucket/scroll/labels.ome.zarr/2"),
+        ("s3://bucket/scroll/labels.ome.zarr/0/", "s3://bucket/scroll/labels.ome.zarr/2"),
+        ("/data/labels.zarr", "/data/labels.zarr/2"),
+        ("C:\\data\\labels.ome.zarr\\0", "C:\\data\\labels.ome.zarr/2"),
+        ("C:\\data\\labels.ome.zarr\\0\\", "C:\\data\\labels.ome.zarr/2"),
+        ("C:\\data\\labels.zarr", "C:\\data\\labels.zarr/2"),
+    ],
+)
+def test_scan_url_replaces_trailing_level_for_posix_and_windows_paths(labels_url, expected):
+    fake = SimpleNamespace(labels_zarr_url=labels_url)
+    assert CrossFrameZarrDataset._scan_url(fake, 2) == expected
+
+
 def test_coarse_scan_level(tmp_path: Path):
     """A coarser OME-Zarr level can be used to speed up FG enumeration."""
     rng = np.random.default_rng(42)
