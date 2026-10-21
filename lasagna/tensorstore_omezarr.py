@@ -4,7 +4,6 @@ import json
 import multiprocessing
 import os
 import queue
-import resource
 import shutil
 import time
 from dataclasses import dataclass
@@ -12,6 +11,11 @@ from pathlib import Path
 
 import numpy as np
 import tensorstore as ts
+
+try:
+	import resource  # POSIX-only; RSS logging is skipped where it is missing
+except ImportError:
+	resource = None
 
 try:
 	from omezarr_pyramid import (
@@ -56,6 +60,8 @@ class LevelMeta:
 
 
 def _rss_mib() -> float | None:
+	if resource is None:
+		return None
 	try:
 		usage = resource.getrusage(resource.RUSAGE_SELF)
 	except Exception:
