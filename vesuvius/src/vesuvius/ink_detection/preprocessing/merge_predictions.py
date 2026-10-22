@@ -197,17 +197,27 @@ def prepare_prediction(path: Path) -> PreparedPrediction:
     return PreparedPrediction(path=path, array=memmap_array, cleanup_path=cleanup_path)
 
 
-def cleanup_prepared_predictions(predictions: Sequence[PreparedPrediction]) -> None:
+def cleanup_prepared_predictions(predictions: list[PreparedPrediction]) -> None:
+    """Flush and delete the temp files behind ``predictions``.
+
+    ``predictions`` is emptied: on Windows a file cannot be deleted while a
+    memory map of it is alive, so every reference to the arrays has to go
+    before the unlink.
+    """
+    cleanup_paths: list[Path] = []
     for prepared in predictions:
         try:
             if isinstance(prepared.array, np.memmap):
                 prepared.array.flush()
         except Exception:
             pass
-        if prepared.cleanup_path is None:
-            continue
+        if prepared.cleanup_path is not None:
+            cleanup_paths.append(prepared.cleanup_path)
+    prepared = None
+    predictions.clear()
+    for cleanup_path in cleanup_paths:
         try:
-            prepared.cleanup_path.unlink(missing_ok=True)
+            cleanup_path.unlink(missing_ok=True)
         except Exception:
             pass
 
@@ -351,6 +361,7 @@ def merge_prediction_files(files: Sequence[Path], output_path: Path, *, merge_me
     prepared_predictions: list[PreparedPrediction] = []
     output_memmap_path: Path | None = None
     output_array: np.memmap | None = None
+    chunks: list[np.ndarray] | None = None
     staged_output_path: Path | None = None
     try:
         for path in files:
@@ -378,6 +389,10 @@ def merge_prediction_files(files: Sequence[Path], output_path: Path, *, merge_me
                 output_array.flush()
             except Exception:
                 pass
+        # Drop every view of the memory maps first; Windows will not unlink a
+        # file that is still mapped.
+        chunks = None
+        output_array = None
         cleanup_prepared_predictions(prepared_predictions)
         if output_memmap_path is not None:
             try:
