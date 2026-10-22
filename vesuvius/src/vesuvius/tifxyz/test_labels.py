@@ -70,6 +70,7 @@ def test_read_tifxyz_discovers_labels_without_loading_shapes_by_default(
         raise AssertionError("cv2.imread should not run during label discovery")
 
     monkeypatch.setattr(cv2, "imread", fail_imread)
+    monkeypatch.setattr(cv2, "imdecode", fail_imread)
 
     segment = read_tifxyz(segment_dir)
     labels = segment.list_labels()

@@ -18,6 +18,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from vesuvius.tifxyz_canvas import full_resolution_extent
+from vesuvius.utils.io.image_io import imread_unicode
 
 InterpolationMethod = Literal["linear", "bspline", "catmull_rom"]
 
@@ -300,7 +301,7 @@ class Tifxyz:
                 f"expected shape {expected_shape}, got {discovered_shape}"
             )
 
-        image = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+        image = imread_unicode(path, cv2.IMREAD_UNCHANGED)
         if image is None:
             raise ValueError(f"Failed to read label image: {path}")
         if image.ndim != 2:
