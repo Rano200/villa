@@ -6,7 +6,9 @@ Creates a dilated binary mask from a zarr using Euclidean Distance Transform.
 from __future__ import annotations
 
 import argparse
+import shutil
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable, Iterable, Optional, Tuple
 
 import numpy as np
@@ -15,6 +17,7 @@ from numcodecs import Blosc
 
 from ..base import TaskConfig, ZarrTask, make_task_config
 from ..registry import register_task
+from ..utils import create_level_dataset
 
 # Try to import edt package for fast EDT
 try:
@@ -197,15 +200,17 @@ class EdtDilateTask(ZarrTask):
         # Create output zarr
         compressor = Blosc(cname="zstd", clevel=3, shuffle=Blosc.BITSHUFFLE)
 
-        output_store = zarr.open_group(self.config.output_zarr, mode="w")
-        output_arr = output_store.create_dataset(
-            self.config.resolution,
-            shape=self._shape,
-            chunks=self.config.chunk_size,
-            dtype=np.uint8,
-            compressor=compressor,
-            fill_value=0,
-            write_empty_chunks=False,
+        # zarr 3 removed Group.create_dataset; create_level_dataset works on zarr 2 and 3.
+        # It writes the .zgroup itself, so the output only has to be emptied first, as mode="w" did.
+        if Path(self.config.output_zarr).exists():
+            shutil.rmtree(self.config.output_zarr)
+        output_arr = create_level_dataset(
+            self.config.output_zarr,
+            str(self.config.resolution),
+            self._shape,
+            self.config.chunk_size,
+            np.uint8,
+            compressor,
         )
 
         print(f"Created output zarr: {self.config.output_zarr}")
