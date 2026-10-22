@@ -241,3 +241,37 @@ def test_fixed_test_copy_inherits_parent_preserves_geometry_and_hashes(tmp_path)
     with pytest.raises(ValueError, match='hash mismatch'):
         collector.bake_test_set(source, originals, split, tmp_path/'badhash', coordinates, Baker())
     assert not (tmp_path/'badhash').exists()
+
+
+def test_sha256sums_has_no_carriage_returns(tmp_path):
+    """sha256sum -c rejects CRLF lines; text-mode writes produce them on Windows."""
+    originals, split, piece = fixture(tmp_path)
+    source = 'https://example.test/'
+    remote = {source: b'<a href="1299_refine/">data</a>',
+              source+'1299_refine/': b'<a href="0001_fiber_run0.json">fiber</a>',
+              source+'1299_refine/0001_fiber_run0.json': json.dumps(piece).encode()}
+    audit = tmp_path/'audit'
+    with patch.object(collector, 'fetch', side_effect=remote.__getitem__):
+        collector.collect(source, originals, split, audit, audit_only=True)
+    data = (audit/'SHA256SUMS').read_bytes()
+    assert data.count(b'\n') == 1 and b'\r' not in data
+
+    (split/'test/PHerc1229').mkdir(parents=True)
+    (split/'train/PHerc1229/fiber.json').rename(split/'test/PHerc1229/fiber.json')
+    piece.pop('vc_open_data_coordinate_space')
+    piece.update(line_points=[[1, 2, 3]], control_points=[{'position': [1, 2, 3]}], width=12)
+    src = tmp_path/'source'
+    rel = 'PHerc1299/0001_fiber_run0.json'
+    (src/'test'/rel).parent.mkdir(parents=True)
+    raw = json.dumps(piece).encode()
+    (src/'test'/rel).write_bytes(raw)
+    (src/'manifest.json').write_text(json.dumps(dict(expected_count=1, files=[
+        dict(path=rel, source='PHerc1299', split='test', sha256=collector.sha(raw))])))
+    class Baker:
+        def bake(self, doc):
+            doc['baked_annotations'] = dict(normals_xyz=[[0, 0, 1]], valid=[True])
+            return doc
+    baked = tmp_path/'baked'
+    collector.bake_test_set(src, originals, split, baked, {'PHerc1299': 'PHerc1299/123@L0'}, Baker())
+    data = (baked/'SHA256SUMS').read_bytes()
+    assert data.count(b'\n') == 1 and b'\r' not in data
