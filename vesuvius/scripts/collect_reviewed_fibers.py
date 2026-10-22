@@ -177,7 +177,7 @@ def bake_test_set(source, originals, split, output, coordinates, baker):
             hv_policy='Full held-out parent effective H/V; never piece geometry')
         (staging / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
         (staging / 'SHA256SUMS').write_text(''.join(
-            f"{r['sha256']}  test/{r['path']}\n" for r in updated))
+            f"{r['sha256']}  test/{r['path']}\n" for r in updated), newline='\n')
         if output.exists():
             raise ValueError(f'Output appeared during baking: {output}')
         staging.rename(output)
@@ -351,7 +351,8 @@ def collect(source, originals, split, output, workers=8, baker=None, *, audit_on
             manifest['selection'] = 'Raw reviewed files only; unresolved provenance is reported, not accepted'
             manifest['hv_policy'] = 'Unmodified source labels; parent inheritance checked but not applied'
         (staging / 'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')
-        (staging / 'SHA256SUMS').write_text(''.join(f"{r['output_sha256']}  {r['path']}\n" for r in rows))
+        (staging / 'SHA256SUMS').write_text(''.join(f"{r['output_sha256']}  {r['path']}\n" for r in rows),
+                                                  newline='\n')
         # Publish only after all downloads, provenance checks and writes succeed.
         if output.exists():
             raise ValueError(f'Output appeared during collection: {output}')
