@@ -730,8 +730,15 @@ struct ProcessChunkCacheServiceRegistry {
 
 ProcessChunkCacheServiceRegistry& processChunkCacheServiceRegistry()
 {
+#if defined(_WIN32)
+    // Avoid joining DLL-owned worker threads from a static destructor while
+    // Windows holds the loader lock during vc_core.dll shutdown.
+    static auto* registry = new ProcessChunkCacheServiceRegistry;
+    return *registry;
+#else
     static ProcessChunkCacheServiceRegistry registry;
     return registry;
+#endif
 }
 
 ChunkCacheService::Options defaultProcessChunkCacheServiceOptions()
