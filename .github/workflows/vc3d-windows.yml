@@ -91,6 +91,35 @@ jobs:
       - name: Build
         run: ninja -C build/ci-windows-mingw
 
+      - name: Long path probe (fork CI only)
+        shell: pwsh
+        continue-on-error: true
+        working-directory: ${{ github.workspace }}
+        run: |
+          Write-Host "== LongPathsEnabled on this runner =="
+          reg query 'HKLM\SYSTEM\CurrentControlSet\Control\FileSystem' /v LongPathsEnabled
+          $env:PATH = "C:\msys64\ucrt64\bin;$env:PATH"
+          $bin = Join-Path $env:GITHUB_WORKSPACE 'volume-cartographer\build\ci-windows-mingw\bin\vc_tifxyz2obj.exe'
+          Write-Host "exe: $bin"
+          $hasTag = [System.IO.File]::ReadAllText($bin, [System.Text.Encoding]::Latin1).Contains('longPathAware')
+          Write-Host "longPathAware text present in exe manifest: $hasTag"
+          $seg = Join-Path $env:RUNNER_TEMP 'seg'
+          python -I (Join-Path $env:GITHUB_WORKSPACE '.github\ci-longpath\mk_tifxyz.py') $seg
+          # 6 dirs x 50 chars, extended-length prefix is NOT used, so the plain 260 limit applies
+          $dir = Join-Path $env:RUNNER_TEMP ((1..6 | ForEach-Object { 'd' * 50 }) -join '\')
+          $out = Join-Path $dir 'out.obj'
+          Write-Host "output path length: $($out.Length)"
+          # create the directory tree through the extended-length prefix so the setup itself cannot fail
+          New-Item -ItemType Directory -Force -Path ('\\?\' + $dir) | Out-Null
+          & $bin $seg $out
+          $rc = $LASTEXITCODE
+          Write-Host "vc_tifxyz2obj exit code: $rc"
+          $exists = [System.IO.File]::Exists('\\?\' + $out)
+          $size = if ($exists) { ([System.IO.FileInfo]('\\?\' + $out)).Length } else { 0 }
+          Write-Host "output file exists: $exists (bytes: $size)"
+          if (-not $exists -or $size -eq 0) { throw "LONGPATH PROBE: FAIL (no output written)" }
+          Write-Host "LONGPATH PROBE: PASS"
+
       - name: Test unified browser Windows paths
         run: |
           cmake --preset ci-windows-mingw -DVC_USE_SCCACHE=ON -DSCCACHE_PROGRAM="${SCCACHE_PATH}" -DVC_TESTING=ON
