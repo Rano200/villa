@@ -156,7 +156,8 @@ struct LocalBackend : IOBackend {
             if (!entry.is_regular_file()) continue;
             auto fname = entry.path().filename().string();
             if (fname[0] == '.' || fname.find(".json") != std::string::npos) continue;
-            result.push_back(fs::relative(entry.path(), root).string());
+            // Keys are '/'-separated on every platform (callers split with rfind('/')).
+            result.push_back(fs::relative(entry.path(), root).generic_string());
         }
         return result;
     }
