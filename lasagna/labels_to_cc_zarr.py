@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import struct
 import subprocess
+import tempfile
 import zlib
 from pathlib import Path
 
@@ -123,14 +124,19 @@ def _encode_video(
         "-preset", "fast",
         str(out_path),
     ]
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-    for frame in frames:
-        proc.stdin.write(frame.tobytes())  # type: ignore[union-attr]
-    proc.stdin.close()  # type: ignore[union-attr]
-    proc.wait()
-    if proc.returncode != 0:
-        err = proc.stderr.read().decode(errors="replace")  # type: ignore[union-attr]
-        raise RuntimeError(f"ffmpeg failed (rc={proc.returncode}):\n{err}")
+    # ffmpeg logs to stderr while it reads stdin. If stderr were a pipe that
+    # we only read after wait(), a full pipe (4 KB on Windows) would block
+    # ffmpeg and our stdin writes would block forever. Use a file instead.
+    with tempfile.TemporaryFile() as err_file:
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=err_file)
+        for frame in frames:
+            proc.stdin.write(frame.tobytes())  # type: ignore[union-attr]
+        proc.stdin.close()  # type: ignore[union-attr]
+        proc.wait()
+        if proc.returncode != 0:
+            err_file.seek(0)
+            err = err_file.read().decode(errors="replace")
+            raise RuntimeError(f"ffmpeg failed (rc={proc.returncode}):\n{err}")
 
 
 # ---------------------------------------------------------------------------
