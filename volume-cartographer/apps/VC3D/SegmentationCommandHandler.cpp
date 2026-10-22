@@ -2469,7 +2469,7 @@ bool SegmentationCommandHandler::startRenderSegment(const std::string& segmentId
 
     // Return missing-tool errors before execute() reaches its dialog path.
     const QString toolPath =
-        QCoreApplication::applicationDirPath() + QStringLiteral("/vc_render_tifxyz");
+        applicationRelativeExecutablePaths(QStringLiteral("vc_render_tifxyz")).first();
     QFileInfo toolInfo(toolPath);
     if (!toolInfo.exists() || !toolInfo.isExecutable()) {
         setErr(tr("vc_render_tifxyz not found or not executable: %1").arg(toolPath),
@@ -3122,7 +3122,7 @@ bool SegmentationCommandHandler::startResumeLocalGrowPatchImpl(
     // Return a typed launch error before the runner reaches its interactive
     // missing-tool warning. Tool::NeighborCopy launches vc_grow_seg_from_seed.
     const QString toolPath =
-        QCoreApplication::applicationDirPath() + QStringLiteral("/vc_grow_seg_from_seed");
+        applicationRelativeExecutablePaths(QStringLiteral("vc_grow_seg_from_seed")).first();
     if (const QFileInfo toolInfo(toolPath); !toolInfo.exists() || !toolInfo.isExecutable()) {
         return fail(tr("vc_grow_seg_from_seed not found or not executable: %1").arg(toolPath),
                     CommandLaunchError::ToolUnavailable);
@@ -3972,7 +3972,7 @@ bool SegmentationCommandHandler::startAlphaCompRefineImpl(
     // Return a typed launch error before the runner reaches its interactive
     // missing-tool warning. Tool::AlphaCompRefine launches vc_objrefine.
     const QString toolPath =
-        QCoreApplication::applicationDirPath() + QStringLiteral("/vc_objrefine");
+        applicationRelativeExecutablePaths(QStringLiteral("vc_objrefine")).first();
     if (const QFileInfo toolInfo(toolPath); !toolInfo.exists() || !toolInfo.isExecutable()) {
         return fail(tr("vc_objrefine not found or not executable: %1").arg(toolPath),
                     CommandLaunchError::ToolUnavailable);
