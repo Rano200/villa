@@ -26,6 +26,7 @@ from vesuvius.label_zarr import (
     pyramid_shapes,
 )
 from vesuvius.utils.cli import HyphenUnderscoreParser
+from vesuvius.utils.io.image_io import imread_unicode
 
 LOGGER = logging.getLogger(__name__)
 
@@ -179,7 +180,7 @@ def load_image(path: Path) -> np.ndarray:
             _warn_extra_pages(path, page_count)
             image = tif.pages[0].asarray() if page_count > 1 else tif.asarray()
     else:
-        image = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+        image = imread_unicode(path, cv2.IMREAD_UNCHANGED)
     if image is None:
         raise RuntimeError(f"Failed to read image data from {path}")
     return _normalize_to_2d(image, path)

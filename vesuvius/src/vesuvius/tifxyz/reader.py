@@ -17,6 +17,8 @@ import cv2
 import numpy as np
 import tifffile
 
+from vesuvius.utils.io.image_io import imread_unicode
+
 from .types import Tifxyz
 
 logger = logging.getLogger(__name__)
@@ -550,7 +552,7 @@ class TifxyzReader:
 
     def _read_label_shape(self, path: Path) -> Tuple[int, int]:
         """Read label shape using OpenCV."""
-        image = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+        image = imread_unicode(path, cv2.IMREAD_UNCHANGED)
         if image is None:
             raise ValueError(f"Failed to read label image: {path}")
         if image.ndim != 2:

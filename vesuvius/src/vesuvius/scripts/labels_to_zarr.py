@@ -70,6 +70,7 @@ def distance_transform_edt(mask: np.ndarray) -> np.ndarray:
         return scipy_edt(mask)
 
 from vesuvius.tifxyz import read_tifxyz
+from vesuvius.utils.io.image_io import imread_unicode
 
 
 def parse_args() -> argparse.Namespace:
@@ -388,7 +389,7 @@ def read_label_image(label_path: Path) -> np.ndarray:
         img = tifffile.imread(str(label_path))
     else:
         # Use cv2 for PNG
-        img = cv2.imread(str(label_path), cv2.IMREAD_UNCHANGED)
+        img = imread_unicode(label_path, cv2.IMREAD_UNCHANGED)
         if img is None:
             raise ValueError(f"Failed to read: {label_path}")
 
