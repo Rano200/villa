@@ -52,6 +52,11 @@ def _process_slab(zarr_path, n_ch, z0, z1, y0, y1, x0, x1):
 
 
 def main():
+    # Windows redirects stdout through the ANSI codepage (cp1252); this tool prints
+    # non-ASCII glyphs, which would raise UnicodeEncodeError. Write UTF-8 instead.
+    if (sys.platform == "win32" and hasattr(sys.stdout, "reconfigure")
+            and not sys.stdout.isatty()):
+        sys.stdout.reconfigure(encoding="utf-8")
     if len(sys.argv) < 2:
         print(f"Usage: {sys.argv[0]} <zarr-path>", file=sys.stderr)
         sys.exit(1)

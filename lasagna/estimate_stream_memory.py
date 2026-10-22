@@ -147,6 +147,11 @@ def _print_stream_detail(N: int, sm: int, sw: int, N_ext: int) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows redirects stdout through the ANSI codepage (cp1252); this tool prints
+    # non-ASCII glyphs, which would raise UnicodeEncodeError. Write UTF-8 instead.
+    if (sys.platform == "win32" and hasattr(sys.stdout, "reconfigure")
+            and not sys.stdout.isatty()):
+        sys.stdout.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("lasagna_json", nargs="?", default=None,
