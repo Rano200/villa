@@ -78,6 +78,24 @@ def test_remap_creates_every_level_and_remaps_values(tmp_path):
     assert zarr.open(str(out / "1"), mode="r").dtype == np.uint8
 
 
+def test_remap_copies_the_input_attributes_to_the_output(tmp_path):
+    level0 = np.full((8, 8, 8), 100, np.uint8)
+    _write_pyramid(tmp_path / "in.zarr", [level0, level0[::2, ::2, ::2].copy()])
+    out = tmp_path / "out.zarr"
+    RemapTask(
+        RemapConfig(
+            input_zarr=str(tmp_path / "in.zarr"),
+            output_zarr=str(out),
+            num_workers=1,
+            remap_dict={100: 2},
+        )
+    ).run()
+    # `".zattrs" in group` is a child lookup on zarr 3, so these used to be dropped
+    expected = dict(zarr.open_group(str(tmp_path / "in.zarr"), mode="r").attrs)
+    assert [d["path"] for d in expected["multiscales"][0]["datasets"]] == ["0", "1"]
+    assert dict(zarr.open_group(str(out), mode="r").attrs) == expected
+
+
 def test_resize_creates_every_level_at_the_reference_shape(tmp_path):
     level0 = np.arange(8 * 8 * 8, dtype=np.uint16).reshape(8, 8, 8)
     _write_pyramid(tmp_path / "in.zarr", [level0, level0[::2, ::2, ::2].copy()])

@@ -267,9 +267,11 @@ class RemapTask(ZarrTask):
         input_store = zarr.open(self.config.input_zarr, mode="r")
         output_store = zarr.open(self.config.output_zarr, mode="a")
 
-        # Copy metadata if present
-        if ".zattrs" in input_store:
-            output_store.attrs.update(input_store.attrs)
+        # Copy metadata if present. `".zattrs" in group` asks for a child named that on zarr 3,
+        # so read the attributes directly (works on zarr 2 and 3).
+        attrs = dict(input_store.attrs)
+        if attrs:
+            output_store.attrs.update(attrs)
 
         # Copy metadata.json if it exists
         metadata_src = Path(self.config.input_zarr) / "metadata.json"
