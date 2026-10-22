@@ -865,6 +865,13 @@ static std::vector<QuadSurface*> load_source_surfaces(const std::filesystem::pat
                                                       QuadSurface* src)
 {
     std::vector<QuadSurface*> surfaces;
+    // A project without a paths folder has no existing segments to load.
+    std::error_code ec;
+    if (!std::filesystem::is_directory(src_dir, ec)) {
+        std::cerr << "Warning: source directory " << src_dir
+                  << " does not exist; continuing with no existing segments" << std::endl;
+        return surfaces;
+    }
     for (const auto& entry : std::filesystem::directory_iterator(src_dir)) {
         if (!std::filesystem::is_directory(entry)) {
             continue;
