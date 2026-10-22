@@ -15,6 +15,7 @@ Usage
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -88,6 +89,11 @@ def _downsample_mean(vol: np.ndarray, step: int) -> np.ndarray:
 # ---------------------------------------------------------------------------
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows redirects stdout through the ANSI codepage (cp1252); this tool prints
+    # non-ASCII glyphs, which would raise UnicodeEncodeError. Write UTF-8 instead.
+    if (sys.platform == "win32" and hasattr(sys.stdout, "reconfigure")
+            and not sys.stdout.isatty()):
+        sys.stdout.reconfigure(encoding="utf-8")
     p = argparse.ArgumentParser(
         description="Label TIFF → winding-number volume (float32 zarr)",
     )

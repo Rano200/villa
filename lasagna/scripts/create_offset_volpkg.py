@@ -124,6 +124,11 @@ def adjust_zattrs(zattrs: dict, scale_mapping: dict[int, int]) -> dict:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows redirects stdout through the ANSI codepage (cp1252); this tool prints
+    # non-ASCII glyphs, which would raise UnicodeEncodeError. Write UTF-8 instead.
+    if (sys.platform == "win32" and hasattr(sys.stdout, "reconfigure")
+            and not sys.stdout.isatty()):
+        sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(
         description="Create an OME-Zarr from an existing one by symlinking scale "
                     "groups at an offset.",
