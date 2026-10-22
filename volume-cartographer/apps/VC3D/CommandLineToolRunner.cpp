@@ -790,30 +790,36 @@ QStringList CommandLineToolRunner::buildArguments(Tool tool)
 QString CommandLineToolRunner::toolName(Tool tool) const
 {
     QString basePath = QCoreApplication::applicationDirPath() + "/";
+    // execute() checks this path with QFileInfo, which does not add ".exe".
+#ifdef Q_OS_WIN
+    const QString exe = QStringLiteral(".exe");
+#else
+    const QString exe;
+#endif
     switch (tool) {
         case Tool::RenderTifXYZ:
-            return basePath + "vc_render_tifxyz";
+            return basePath + "vc_render_tifxyz" + exe;
 
         case Tool::GrowSegFromSegment:
-            return basePath + "vc_grow_seg_from_segments";
+            return basePath + "vc_grow_seg_from_segments" + exe;
 
         case Tool::tifxyz2obj:
-            return basePath + "vc_tifxyz2obj";
+            return basePath + "vc_tifxyz2obj" + exe;
 
         case Tool::obj2tifxyz:
-            return basePath + "vc_obj2tifxyz_legacy";
+            return basePath + "vc_obj2tifxyz_legacy" + exe;
 
         case Tool::AlphaCompRefine:
-            return basePath + "vc_objrefine";
+            return basePath + "vc_objrefine" + exe;
 
         case Tool::NeighborCopy:
-            return basePath + "vc_grow_seg_from_seed";
+            return basePath + "vc_grow_seg_from_seed" + exe;
 
         case Tool::MergeTifxyz:
-            return basePath + "vc_merge_tifxyz";
+            return basePath + "vc_merge_tifxyz" + exe;
 
         case Tool::MergePatch:
-            return basePath + "vc_merge_patch";
+            return basePath + "vc_merge_patch" + exe;
 
         case Tool::CustomCommand:
             return _customCommand.isEmpty() ? "custom_command" : _customCommand;
