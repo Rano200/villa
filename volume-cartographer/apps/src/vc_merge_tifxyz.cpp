@@ -1532,7 +1532,13 @@ int rasterizeObjToTifxyz(const fs::path& obj2tifxyz,
         << "\"" << obj.string() << "\" "
         << "\"" << output.string() << "\" "
         << step_size;
-    const int rc = std::system(cmd.str().c_str());
+    std::string command = cmd.str();
+#ifdef _WIN32
+    // std::system runs `cmd.exe /c <command>`, which strips the first and the
+    // last quote of a line that starts with one; an outer pair keeps ours.
+    command = "\"" + command + "\"";
+#endif
+    const int rc = std::system(command.c_str());
     if (rc != 0) {
         std::cerr << "vc_obj2tifxyz_legacy failed (rc=" << rc << ")\n";
         return 1;
@@ -1561,6 +1567,10 @@ fs::path resolveObj2Tifxyz(const std::string& override_path, const char* argv0)
         const fs::path self = fs::canonical(argv0);
         const fs::path adj  = self.parent_path() / "vc_obj2tifxyz_legacy";
         if (fs::exists(adj)) return adj;
+#ifdef _WIN32
+        const fs::path adj_exe = self.parent_path() / "vc_obj2tifxyz_legacy.exe";
+        if (fs::exists(adj_exe)) return adj_exe;
+#endif
     } catch (...) { /* fall through to PATH lookup */ }
     return fs::path("vc_obj2tifxyz_legacy");
 }
