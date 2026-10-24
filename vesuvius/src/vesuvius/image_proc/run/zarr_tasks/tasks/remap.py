@@ -16,7 +16,7 @@ import zarr
 
 from ..base import TaskConfig, ZarrTask, make_task_config
 from ..registry import register_task
-from ..utils import get_chunk_slices
+from ..utils import create_level_dataset, get_chunk_slices
 
 # Try to import fastremap for efficient remapping
 try:
@@ -182,15 +182,14 @@ class RemapTask(ZarrTask):
         if output_path.exists():
             print("Output already exists, opening in r+ mode")
         else:
+            # create_level_dataset creates the group and the level on zarr 2 and 3
             print("Creating output zarr")
-            zarr.open(self.config.output_zarr, mode="w")
 
     def run(self) -> None:
         """Execute remap for all levels."""
         self.prepare()
 
         input_store = zarr.open(self.config.input_zarr, mode="r")
-        output_store = zarr.open(self.config.output_zarr, mode="a")
 
         for level in self._levels_to_process:
             print(f"\n{'='*60}")
@@ -205,13 +204,15 @@ class RemapTask(ZarrTask):
             print(f"Array dtype: {input_arr.dtype}")
 
             # Create output array with same properties
-            if str(level) not in output_store:
-                output_store.create_dataset(
+            if not (Path(self.config.output_zarr) / str(level)).exists():
+                # zarr 3 removed Group.create_dataset; create_level_dataset works on zarr 2 and 3
+                create_level_dataset(
+                    self.config.output_zarr,
                     str(level),
-                    shape=input_arr.shape,
-                    chunks=input_arr.chunks,
-                    dtype=input_arr.dtype,
-                    compressor=input_arr.compressor,
+                    input_arr.shape,
+                    input_arr.chunks,
+                    input_arr.dtype,
+                    input_arr.compressor,
                 )
 
             # Generate and process work items for this level
@@ -266,9 +267,11 @@ class RemapTask(ZarrTask):
         input_store = zarr.open(self.config.input_zarr, mode="r")
         output_store = zarr.open(self.config.output_zarr, mode="a")
 
-        # Copy metadata if present
-        if ".zattrs" in input_store:
-            output_store.attrs.update(input_store.attrs)
+        # Copy metadata if present. `".zattrs" in group` asks for a child named that on zarr 3,
+        # so read the attributes directly (works on zarr 2 and 3).
+        attrs = dict(input_store.attrs)
+        if attrs:
+            output_store.attrs.update(attrs)
 
         # Copy metadata.json if it exists
         metadata_src = Path(self.config.input_zarr) / "metadata.json"
